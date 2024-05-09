@@ -1,52 +1,53 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Zenject;
 
 public class GameController : MonoBehaviour
 {
-    public static GameController instance;
     public bool IsGame { get; private set; }
 
-    public UIController uiController;
-    public SaveController saveController;
-    public SoundController soundController;
-    public PlayerController playerController;
+    private UIController _uiController;
+    private SaveController _saveController;
+    private SoundController _soundController;
+    private MultiplayerController _multiplayerController;
+
+    private Spawner _spawner;
 
     private bool _isSceneLoaded;
 
-    void Awake() 
+    [Inject]
+    private void Construct(UIController uiController, SaveController saveController, SoundController soundController, MultiplayerController multiplayerController, Spawner spawner)
     {
-        if (instance == null)
-            instance = this;
-        else
-            Destroy(this);
-    }
+        _uiController = uiController;
+        _saveController = saveController;
+        _soundController = soundController;
+        _multiplayerController = multiplayerController;
+        _spawner = spawner;
 
-    void Start()
-    {
-        saveController.Load();
-        playerController.Init();
-        soundController.Init();
-        uiController.Init();
+        _saveController.Load();
+        //_soundController.Init();
+        //_spawnerController.Init();
+        //_uiController.Init();
 
-        LoadCurrentLevel();
+        _uiController.ShowPanelMenu();
     }
 
     public void Game() 
     {
         IsGame = true;
-        uiController.ShowPanelGame();
+        LoadCurrentLevel();
     }
 
     public void Win()
     {
         IsGame = false;
-        uiController.ShowPanelWin();
+        _uiController.ShowPanelWin();
     }
 
     public void Defeat() 
     {
         IsGame = false;
-        uiController.ShowPanelDefeat();
+        _uiController.ShowPanelDefeat();
     }
 
     public void LoadCurrentLevel() 
@@ -59,29 +60,32 @@ public class GameController : MonoBehaviour
     {
         UnloadScene();
 
-        saveController.data.level = ++saveController.data.level >= SceneManager.sceneCountInBuildSettings ? 1 : saveController.data.level;
-        saveController.Save();
+        _saveController.data.level = ++_saveController.data.level >= SceneManager.sceneCountInBuildSettings ? 1 : _saveController.data.level;
+        _saveController.Save();
 
         LoadScene();
     }
 
-    private void LoadScene()
-    {
-        if (!_isSceneLoaded)
-        {
-            _isSceneLoaded = true;
-            SceneManager.LoadSceneAsync(saveController.data.level, LoadSceneMode.Additive);
-        }
-
-        uiController.ShowPanelMenu();
-    }
-
-    private void UnloadScene()
+    public void UnloadScene()
     {
         if (_isSceneLoaded)
         {
             _isSceneLoaded = false;
-            SceneManager.UnloadSceneAsync(saveController.data.level);
+            SceneManager.UnloadSceneAsync(_saveController.data.level);
         }
+
+        _spawner.DestroyPlayer();
+    }
+
+    public void LoadScene()
+    {
+        if (!_isSceneLoaded)
+        {
+            _isSceneLoaded = true;
+            SceneManager.LoadSceneAsync(_saveController.data.level, LoadSceneMode.Additive);
+        }
+
+        _spawner.SpawnPlayer();
+        _uiController.ShowPanelGame();
     }
 }

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using Zenject.Asteroids;
 
 public class SoundController : MonoBehaviour
 {
@@ -11,10 +12,13 @@ public class SoundController : MonoBehaviour
     [SerializeField] private SoundAudioSource[] _soundAudioSources;
 
     private bool _isSound;
+    private SaveController _saveController;
 
-    public void Init()
+    public void Construct(SaveController saveController)
     {
-        _isSound = GameController.instance.saveController.data.isSound;
+        _saveController = saveController;
+
+        _isSound = _saveController.data.isSound;
         _image.sprite = _isSound ? _sprSoundOn : _sprSoundOff;
         AudioListener.volume = _isSound ? 1 : 0;
     }
@@ -55,8 +59,8 @@ public class SoundController : MonoBehaviour
 
         AudioListener.volume = _isSound ? 1 : 0;
 
-        GameController.instance.saveController.data.isSound = _isSound;
-        GameController.instance.saveController.Save();
+        _saveController.data.isSound = _isSound;
+        _saveController.Save();
     }
 
     [System.Serializable]
